@@ -1,0 +1,24 @@
+{
+  "name": "twitter-scrapper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bull": "^4.16.5",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "expressjs": "^1.0.1",
+    "node-fetch": "^2.7.0",
+    "path": "^0.12.7",
+    "redis": "^4.7.0",
+    "sequelize": "^6.37.5",
+    "sqlite3": "^5.1.7"
+  }
+}

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Followings</title>
+    <style>
+      /* Basic styles for followings page */
+      body {
+        font-family: 'Roboto', sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f9f9f9;
+        color: #333;
+      }
+      .container {
+        width: 100%;
+        max-width: 1800px;
+        margin: auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        font-size: 28px;
+        margin-bottom: 40px;
+      }
+
+      /* Card-like layout for followings */
+      .following-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+      .following-item {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .following-item img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 15px;
+      }
+      .following-item h3 {
+        font-size: 18px;
+        color: #007bff;
+        margin: 10px 0;
+      }
+      .following-item p {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 15px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-height: 50px;
+      }
+      .following-item .stats {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 15px;
+      }
+      .following-item a {
+        text-decoration: none;
+        padding: 8px 15px;
+        font-size: 14px;
+        color: #fff;
+        background-color: #007bff;
+        border-radius: 20px;
+        transition: background-color 0.3s ease;
+      }
+      .following-item a:hover {
+        background-color: #0056b3;
+      }
+
+      /* Pagination Styling */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 40px;
+        gap: 12px;
+        align-items: center;
+      }
+
+      /* Pagination buttons */
+      .pagination button {
+        padding: 10px 16px;
+        background-color: #007bff;
+        color: #fff;
+        border: 1px solid #007bff;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      /* Disabled state */
+      .pagination button.disabled {
+        background-color: #ccc;
+        border-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      /* Active page */
+      .pagination button.active {
+        background-color: #0056b3;
+        border-color: #0056b3;
+      }
+
+      /* Previous/Next Icons */
+      .pagination .arrow {
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      /* Hover effects */
+      .pagination button:hover:not(.disabled) {
+        background-color: #0056b3;
+        border-color: #0056b3;
+      }
+
+      .pagination button:focus {
+        outline: none;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .pagination button {
+          padding: 8px 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>User Followings</h1>
+      <div id="followingList" class="following-list"></div>
+      <div id="pagination" class="pagination"></div>
+    </div>
+
+    <script>
+      const followingListContainer = document.getElementById("followingList");
+      const paginationContainer = document.getElementById("pagination");
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get("userId");
+      let currentPage = 1;
+      const itemsPerPage = 20;
+
+      // Fetch followings for the specific user
+      async function fetchFollowings() {
+        const response = await fetch(`/api/users/${userId}/followings?page=${currentPage}&limit=${itemsPerPage}`);
+        const data = await response.json();
+
+        // Clear previous followings
+        followingListContainer.innerHTML = "";
+
+        data.followings.forEach((following) => {
+          following = following.FollowingDetail; // Access the nested following details
+          const followingItem = document.createElement("div");
+          followingItem.classList.add("following-item");
+
+          followingItem.innerHTML = `
+            <img src="${following.profile_image_url_https}" alt="${following.name}" />
+            <h3>${following.name}</h3>
+            <p title="${following.description || 'No description available.'}">${following.description ? following.description.slice(0, 70) + '...' : 'No description available.'}</p>
+            <div class="stats">
+              <span>Followers: ${following.followers_count}</span>
+              <span>Following: ${following.friends_count}</span>
+            </div>
+            <a href="${following.url}" target="_blank">View Profile</a>
+          `;
+
+          followingListContainer.appendChild(followingItem);
+        });
+
+        // Handle pagination
+        updatePagination(data.totalPages);
+      }
+
+      // Update pagination buttons with range-based logic
+      function updatePagination(totalPages) {
+        paginationContainer.innerHTML = "";
+
+        // Previous button
+        const prevButton = document.createElement("button");
+        prevButton.classList.add("arrow");
+        prevButton.innerHTML = "&lt;"; // "Previous" arrow
+        prevButton.classList.toggle("disabled", currentPage === 1);
+        prevButton.addEventListener("click", () => {
+          if (currentPage > 1) {
+            currentPage--;
+            fetchFollowings();
+          }
+        });
+        paginationContainer.appendChild(prevButton);
+
+        // Show page numbers in a range (e.g., 1 - 10)
+        let startPage = Math.max(1, currentPage - 3); // Show up to 3 pages before current
+        let endPage = Math.min(totalPages, currentPage + 3); // Show up to 3 pages after current
+
+        // Adjust if close to beginning or end
+        if (currentPage <= 4) {
+          endPage = Math.min(7, totalPages);
+        }
+        if (currentPage >= totalPages - 3) {
+          startPage = Math.max(totalPages - 6, 1);
+        }
+
+        // First page button
+        if (startPage > 1) {
+          const firstButton = document.createElement("button");
+          firstButton.innerHTML = "1";
+          firstButton.addEventListener("click", () => {
+            currentPage = 1;
+            fetchFollowings();
+          });
+          paginationContainer.appendChild(firstButton);
+          paginationContainer.appendChild(document.createTextNode("..."));
+        }
+
+        // Page number buttons
+        for (let i = startPage; i <= endPage; i++) {
+          const button = document.createElement("button");
+          button.innerHTML = i;
+          button.classList.toggle("active", i === currentPage);
+          button.addEventListener("click", () => {
+            currentPage = i;
+            fetchFollowings();
+          });
+          paginationContainer.appendChild(button);
+        }
+
+        // Last page button
+        if (endPage < totalPages) {
+          paginationContainer.appendChild(document.createTextNode("..."));
+          const lastButton = document.createElement("button");
+          lastButton.innerHTML = totalPages;
+          lastButton.addEventListener("click", () => {
+            currentPage = totalPages;
+            fetchFollowings();
+          });
+          paginationContainer.appendChild(lastButton);
+        }
+
+        // Next button
+        const nextButton = document.createElement("button");
+        nextButton.classList.add("arrow");
+        nextButton.innerHTML = "&gt;"; // "Next" arrow
+        nextButton.classList.toggle("disabled", currentPage === totalPages);
+        nextButton.addEventListener("click", () => {
+          if (currentPage < totalPages) {
+            currentPage++;
+            fetchFollowings();
+          }
+        });
+        paginationContainer.appendChild(nextButton);
+      }
+
+      // Initialize the followings page
+      fetchFollowings();
+    </script>
+  </body>
+</html>
