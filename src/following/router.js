@@ -59,6 +59,23 @@ followingRouter.get("/:screenName", async (req, res) => {
   }
 });
 
+followingRouter.delete("/:id", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    await UserFollowing.destroy({ where: { user_id: userId } });
+    const userDeletionResult = await User.destroy({ where: { id: userId } });
+
+    if (userDeletionResult === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.status(200).json({ message: "User and associated data deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: "An error occurred while deleting the user." });
+  }
+});
+
 followingRouter.get("/", async (req, res) => {
   try {
     const users = await User.findAll({
